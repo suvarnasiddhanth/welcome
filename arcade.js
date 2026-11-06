@@ -20,7 +20,7 @@ window.Arcade = (() => {
     root.replaceChildren();
     root.append(el('section', { class: 'hero' }, `
       <h1>I make small games.</h1>
-      <p>Hi, I'm Your Name. Pick one below and play. Each is a self-contained experiment.</p>`));
+      <p>Hi, I'm Siddhanth Suvarna. Pick one below and play. Each is a self-contained experiment.</p>`));
     const grid = el('ul', { class: 'grid' });
     games.forEach((g) => {
       const li = el('li');
@@ -47,7 +47,7 @@ window.Arcade = (() => {
     cleanup = null;
     const game = games.find((g) => g.id === location.hash.slice(1));
     game ? play(game) : home();
-    document.title = (game ? game.title + ' · ' : '') + 'Your Name';
+    document.title = (game ? game.title + ' · ' : '') + 'Siddhanth Suvarna';
     window.scrollTo(0, 0);
   }
 
