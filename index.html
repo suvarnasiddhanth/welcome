@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Name · Minigames</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#">Your Name</a>
+  <nav>
+    <a href="https://github.com/your-username">GitHub</a>
+    <a href="mailto:you@example.com">Contact</a>
+  </nav>
+</header>
+
+<main id="app" tabindex="-1"></main>
+
+<footer>Built by hand. Source on <a href="https://github.com/your-username/your-repo">GitHub</a>.</footer>
+
+<!-- 1. Core -->
+<script src="arcade.js"></script>
+<!-- 2. Games: add one <script> line per game -->
+<script src="games/coin-flip.js"></script>
+<script src="games/dice-roll.js"></script>
+<!-- 3. Start -->
+<script>Arcade.start(document.getElementById('app'));</script>
+</body>
+</html>
