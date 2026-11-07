@@ -25,6 +25,10 @@ Arcade.register({
         </div>
         <div class="burst" id="burst"></div>
       </div>
+      <div class="altitude" id="alt" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M1 20 9 6l4.5 7L16 9l7 11z"/></svg>
+        <span class="up">↑</span><span>Height</span><b><span id="altNum">0.0</span> m</b>
+      </div>
       <p class="result" aria-live="polite">Ready when you are.</p>
       <div class="row">
         <button class="btn" id="flip">Flip</button>
@@ -50,26 +54,62 @@ Arcade.register({
       const top = c.getBoundingClientRect().top + window.scrollY;
       const below = footer.offsetHeight + parseFloat(getComputedStyle(main).paddingBottom);
       const need = top + c.offsetHeight + below;
-      const target = wrap.offsetHeight + (window.innerHeight - need);
-      size = Math.max(70, Math.min(150, Math.floor(target / 2.47)));
+      const target = wrap.offsetHeight + (document.documentElement.clientHeight - need);
+      size = Math.max(70, Math.min(180, Math.floor(target / 2.47)));
       c.style.setProperty('--coin', size + 'px');
     }
     const onResize = () => fit();
     addEventListener('resize', onResize);
     fit();
     if (document.fonts) document.fonts.ready.then(fit);
+    // Refit whenever anything around the coin changes size (web font loading in, text wrapping, etc.).
+    // The coin area itself isn't observed, so this can't loop.
+    let raf = 0;
+    const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); });
+    [document.querySelector('.top'), document.querySelector('footer'), c.previousElementSibling,
+      ...[...c.children].filter((n) => !n.classList.contains('coin-wrap') && !n.classList.contains('altitude'))].forEach((n) => n && ro.observe(n));
 
-    function sparkle(lift = 0) {                // lift: how far above the resting spot the burst happens
+    // Sparks escalate with the ricochet combo (level): more of them, farther, brighter, more colours,
+    // then streaks, falling arcs and expanding shockwave rings.
+    const PALETTE = ['#ffcf3f', '#ffe58a', '#ff9f1c', '#ff4d6d', '#ffffff', '#5ad1ff', '#b388ff'];
+
+    function ring(L, delay, color) {
+      const r = document.createElement('i'), d = size * (1.1 + L * 0.25);
+      r.className = 'ring';
+      r.style.cssText = `width:${d}px;height:${d}px;left:${-d / 2}px;top:${-d / 2}px;border-color:${color};box-shadow:0 0 ${6 + L * 2}px ${color}`;
+      burst.append(r);
+      r.animate([{ transform: 'scale(.1)', opacity: 0.9 }, { transform: 'scale(1)', opacity: 0 }],
+        { duration: 650, delay, easing: 'cubic-bezier(.1,.7,.3,1)', fill: 'backwards' }).onfinish = () => r.remove();
+    }
+
+    function sparkle(lift = 0, level = 0) {     // lift: height above the resting spot; level: combo size
+      const L = Math.min(level, 8);
       burst.style.transform = `translateY(${-lift}px)`;
-      for (let i = 0; i < 14; i++) {
-        const p = document.createElement('i');
+      const n = Math.min(90, 14 + L * 9);
+      const reach = 1 + L * 0.2;
+      const colors = PALETTE.slice(0, Math.min(PALETTE.length, 2 + Math.floor(L * 0.8)));
+      if (L >= 2) ring(L, 0, colors[colors.length - 1]);
+      if (L >= 5) ring(L, 120, '#ffffff');
+      if (L >= 7) ring(L, 240, colors[2]);
+
+      for (let i = 0; i < n; i++) {
+        const p = document.createElement('i'), color = colors[Math.floor(Math.random() * colors.length)];
+        const streak = L >= 4 && Math.random() < 0.4;
+        const w = streak ? 3 : 6 + Math.random() * (2 + L * 1.2), h = streak ? 10 + L * 2 : w;
+        const a = (Math.PI * 2 * i) / n + Math.random() * 0.4;
+        const r = size * (0.47 + Math.random() * 0.33) * reach;
+        const dx = Math.cos(a) * r, dy = Math.sin(a) * r * 0.7;
+        const drop = L >= 3 ? size * (0.3 + Math.random() * 0.5) : 0;      // gravity pulls big bursts down
+        const rot = streak ? (a * 180) / Math.PI - 90 : 45;
+        const spin = streak ? 0 : (Math.random() - 0.5) * (360 + L * 180);
         p.className = 'spark';
+        p.style.cssText = `width:${w}px;height:${h}px;left:${-w / 2}px;top:${-h / 2}px;background:${color};box-shadow:0 0 ${4 + L * 2}px ${color}`;
         burst.append(p);
-        const a = (Math.PI * 2 * i) / 14 + Math.random() * 0.4, r = size * (0.47 + Math.random() * 0.33);
         p.animate([
-          { transform: 'translate(0,0) scale(1)', opacity: 1 },
-          { transform: `translate(${Math.cos(a) * r}px,${Math.sin(a) * r * 0.7}px) scale(0)`, opacity: 0 },
-        ], { duration: 700 + Math.random() * 300, easing: 'cubic-bezier(.1,.7,.3,1)' }).onfinish = () => p.remove();
+          { transform: `translate(0,0) rotate(${rot}deg) scale(1)`, opacity: 1 },
+          { transform: `translate(${dx * 0.7}px,${dy * 0.7}px) rotate(${rot + spin / 2}deg) scale(1)`, opacity: 1, offset: 0.45 },
+          { transform: `translate(${dx}px,${dy + drop}px) rotate(${rot + spin}deg) scale(0)`, opacity: 0 },
+        ], { duration: 700 + Math.random() * 300 + L * 80, easing: 'cubic-bezier(.1,.7,.3,1)' }).onfinish = () => p.remove();
       }
       c.querySelectorAll('.shine').forEach((s) => s.animate([
         { transform: 'translateX(-110%)', opacity: 1 }, { transform: 'translateX(110%)', opacity: 1 },
@@ -100,6 +140,22 @@ Arcade.register({
       hint.textContent = rico.checked ? 'Click the coin midair to knock it higher.' : 'Turn on Ricochet to click the coin midair.';
     }
 
+    // Height meter: while the coin is in the air and above the top of the window, show how high it is.
+    // 0.8 m per coin-diameter, so a plain first flip peaks around 1 m regardless of window size.
+    const alt = $('#alt'), altNum = $('#altNum');
+    let altRaf = 0, lastTxt = '';
+    function trackHeight() {
+      if (!busy) { alt.classList.remove('show'); altRaf = 0; return; }
+      const h = Math.max(0, -new DOMMatrix(getComputedStyle(toss).transform).m42);
+      const offscreen = toss.getBoundingClientRect().bottom < 36;
+      alt.classList.toggle('show', offscreen);
+      if (offscreen) {
+        const txt = ((h / size) * 0.8).toFixed(1);
+        if (txt !== lastTxt) { altNum.textContent = txt; lastTxt = txt; }
+      }
+      altRaf = requestAnimationFrame(trackHeight);
+    }
+
     // Read where the coin is right now (position, tilt and spin) from its live transforms.
     function readState() {
       const t = new DOMMatrix(getComputedStyle(toss).transform);
@@ -116,11 +172,9 @@ Arcade.register({
       const isHeads = Math.random() < 0.5;                     // only the last launch decides the result
       const target = isHeads ? 0 : 180;
 
-      // how high: each ricochet goes higher than where it was hit, but never off the top of the window
+      // how high: each ricochet goes higher than where it was hit (no cap; the height meter covers off-screen)
       const h0 = Math.max(0, -from.y);
-      const restTop = toss.getBoundingClientRect().top - from.y;
-      const maxApex = Math.max(h0 + size * 0.4, restTop - 10);
-      const apex = Math.min(maxApex, h0 + size * (1.27 + 0.2 * count));
+      const apex = h0 + size * (1.27 + 0.2 * count);
 
       // flight time follows a falling-body curve, so higher throws take longer
       const u = 150 / size;
@@ -153,8 +207,9 @@ Arcade.register({
       ];
       angle = next;
       coin.style.transform = `rotateX(${angle}deg)`;
+      if (!altRaf) altRaf = requestAnimationFrame(trackHeight);
 
-      flightTimers.push(later(() => sparkle(0), landT));
+      flightTimers.push(later(() => sparkle(0, ricochets), landT));
       flightTimers.push(later(() => {
         settle(isHeads); anims = []; ricochets = 0; setBusy(false);
         if (pendingFit) { pendingFit = false; fit(); }
@@ -179,7 +234,7 @@ Arcade.register({
       const from = readState();                              // read BEFORE cancelling the animations
       clearFlight();
       ricochets++;
-      sparkle(Math.max(0, -from.y));
+      sparkle(Math.max(0, -from.y), ricochets);
       out.textContent = `Ricochet ×${ricochets}!`;
       launch(from, ricochets);
     }
@@ -190,6 +245,6 @@ Arcade.register({
     rico.onchange = updateClickable;
     setBusy(false);
 
-    return () => { timers.forEach(clearTimeout); removeEventListener('resize', onResize); };
+    return () => { timers.forEach(clearTimeout); removeEventListener('resize', onResize); ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(altRaf); };
   },
 });
