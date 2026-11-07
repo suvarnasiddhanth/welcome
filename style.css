@@ -48,10 +48,24 @@ h2{font-size:clamp(2rem,6vw,3rem);margin:0 0 1.5rem;letter-spacing:-.02em}
 .btn:hover:not(:disabled){filter:brightness(1.08)}.btn:disabled{opacity:.6;cursor:wait}
 select{background:var(--bg);color:var(--text);border-color:var(--line);padding:.6rem .8rem;margin-left:.4rem}
 /* coin */
-.coin-wrap{perspective:700px;padding:1rem}
-.coin{width:150px;height:150px;position:relative;transform-style:preserve-3d}
-.face{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;font-size:4rem;font-weight:800;color:var(--accent-ink);background:radial-gradient(circle at 35% 30%,#ffe58a,var(--accent) 60%,#d9a400);border:6px solid #e0aa00;backface-visibility:hidden}
-.face.back{transform:rotateY(180deg)}
+.coin-wrap{position:relative;width:240px;height:370px}
+.toss{position:absolute;left:50%;bottom:40px;width:150px;height:150px;margin-left:-75px;perspective:900px}
+.coin{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.edge{position:absolute;inset:0;border-radius:50%;background:linear-gradient(#e8b92a,#a87800);border:1px solid #8f6500}
+.face{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:grid;place-items:center;backface-visibility:hidden;
+  background:radial-gradient(circle at 32% 28%,#fff0a8,var(--accent) 45%,#d9a400 85%);border:5px solid #e3ac00;box-shadow:inset 0 0 14px rgba(120,80,0,.45)}
+.face.front{transform:translateZ(7.5px)}
+.face.back{transform:rotateX(180deg) translateZ(7.5px)}
+.rim{width:calc(100% - 22px);height:calc(100% - 22px);border-radius:50%;border:3px solid rgba(130,90,0,.45);display:grid;place-items:center}
+.rim span{font-size:4rem;font-weight:800;line-height:1;color:#a26f00;text-shadow:0 2px 0 #ffeaa0,0 -1px 0 rgba(90,60,0,.5)}
+.shine{position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.85) 50%,transparent 65%)}
+.shadow{position:absolute;left:50%;bottom:18px;width:130px;height:22px;border-radius:50%;background:#000;opacity:.4;filter:blur(5px);transform:translateX(-50%)}
+.burst{position:absolute;left:50%;bottom:115px;width:0;height:0;pointer-events:none}
+.spark{position:absolute;left:-4px;top:-4px;width:8px;height:8px;background:var(--accent);border-radius:2px;transform:rotate(45deg)}
+.history{display:flex;gap:.4rem;min-height:30px}
+.pip{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800}
+.pip.h{background:var(--accent);color:var(--accent-ink)}
+.pip.t{background:var(--bg);color:var(--accent);border:2px solid var(--accent)}
 /* dice */
 .dice{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;min-height:90px}
 .die{width:80px;height:80px;padding:12px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);background:#f7f4ff;border-radius:16px;box-shadow:0 4px 0 #b9b2e6}
