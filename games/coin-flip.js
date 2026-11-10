@@ -352,6 +352,10 @@ Arcade.register({
     rico.onchange = updateClickable;
     setBusy(false);
 
-    return () => { flightTimers.forEach(clearTimeout); removeEventListener('resize', onResize); ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(altRaf); };
+    // Customize panel (top-right of the stage): backgrounds now, coin looks later
+    const cz = Arcade.customize && Arcade.customize(c);
+    if (cz) Arcade.backgrounds.attach(c, cz);
+
+    return () => { if (cz) cz.destroy(); flightTimers.forEach(clearTimeout); removeEventListener('resize', onResize); ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(altRaf); };
   },
 });

@@ -90,6 +90,23 @@ select{background:var(--bg);color:var(--text);border-color:var(--line);padding:.
 .pip{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800}
 .pip.h{background:var(--accent);color:var(--accent-ink)}
 .pip.t{background:var(--bg);color:var(--accent);border:2px solid var(--accent)}
+/* customize panel + background picker */
+.coin-stage{position:relative}
+.coin-stage.has-bg{background-image:linear-gradient(rgba(27,24,48,.3),rgba(27,24,48,.3)),var(--stage-bg);background-size:cover;background-position:center}
+.coin-stage.has-bg :is(.result,.tally,.hint){color:var(--text);text-shadow:0 1px 8px rgba(0,0,0,.85)}
+.cz-btn{position:absolute;top:.75rem;right:.75rem;z-index:5;font:inherit;font-weight:700;font-size:.9rem;color:var(--text);background:rgba(27,24,48,.85);border:2px solid var(--line);border-radius:999px;padding:.35rem .9rem;cursor:pointer}
+.cz-btn:hover,.cz-btn[aria-expanded=true]{border-color:var(--accent)}
+.cz-panel{position:absolute;top:3.4rem;right:.75rem;z-index:6;width:min(380px,calc(100% - 1.5rem));max-height:calc(100% - 4.4rem);overflow:auto;padding:1rem;background:var(--bg);border:2px solid var(--line);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:left}
+.cz-panel[hidden]{display:none}
+.cz-panel h3{margin:0 0 .6rem;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cz-panel section+section{margin-top:1rem}
+.bg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.6rem}
+.bg-opt{font:inherit;font-size:.8rem;color:var(--text);background:none;cursor:pointer;display:flex;flex-direction:column;gap:.3rem;padding:.3rem;border:2px solid var(--line);border-radius:12px;text-align:center;min-width:0}
+.bg-opt:hover{border-color:var(--muted)}
+.bg-opt[aria-checked=true]{border-color:var(--accent)}
+.bg-thumb{display:block;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--surface)}
+.bg-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.bg-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* dice */
 .dice{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;min-height:90px}
 .die{width:80px;height:80px;padding:12px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);background:#f7f4ff;border-radius:16px;box-shadow:0 4px 0 #b9b2e6}
