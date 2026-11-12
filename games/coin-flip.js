@@ -123,7 +123,9 @@ Arcade.register({
 
     // Sparks escalate with the ricochet combo (level): more of them, farther, brighter, more colours,
     // then streaks, falling arcs and expanding shockwave rings.
-    const PALETTE = ['#ffcf3f', '#ffe58a', '#ff9f1c', '#ff4d6d', '#ffffff', '#5ad1ff', '#b388ff'];
+    let look = null;                          // coin look (Arcade.coins): its metal sets the first two spark colours
+    const BASE_SPARKS = ['#ffcf3f', '#ffe58a'];
+    const PALETTE_TAIL = ['#ff9f1c', '#ff4d6d', '#ffffff', '#5ad1ff', '#b388ff'];   // added as the combo grows
 
     const MAX_SPARKS = 150, MAX_RINGS = 15;      // hard budget of live animated elements
     let liveSparks = 0, liveRings = 0;
@@ -149,7 +151,8 @@ Arcade.register({
 
       const n = Math.max(0, Math.min(90, 14 + L * 9, MAX_SPARKS - liveSparks));
       const reach = 1 + L * 0.2;
-      const colors = PALETTE.slice(0, Math.min(PALETTE.length, 2 + Math.floor(L * 0.8)));
+      const palette = [...(look ? look.sparks : BASE_SPARKS), ...PALETTE_TAIL];
+      const colors = palette.slice(0, Math.min(palette.length, 2 + Math.floor(L * 0.8)));
       const glow = n <= 40;                      // glow (box-shadow) is the costly part, so only on smaller bursts
       if (L >= 2) ring(group, L, 0, colors[colors.length - 1]);
       if (L >= 5) ring(group, L, 120, '#ffffff');
@@ -355,6 +358,7 @@ Arcade.register({
     // Customize panel (top-right of the stage): backgrounds now, coin looks later
     const cz = Arcade.customize && Arcade.customize(c);
     if (cz) Arcade.backgrounds.attach(c, cz);
+    if (cz && Arcade.coins) look = Arcade.coins.attach(c, cz);
 
     return () => { if (cz) cz.destroy(); flightTimers.forEach(clearTimeout); removeEventListener('resize', onResize); ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(altRaf); };
   },

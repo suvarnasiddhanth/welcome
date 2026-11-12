@@ -50,19 +50,28 @@ h2{font-size:clamp(1.6rem,5vh,2.6rem);line-height:1.15;margin:0 0 1rem;letter-sp
 .btn:hover:not(:disabled){filter:brightness(1.08)}.btn:disabled{opacity:.6;cursor:wait}
 select{background:var(--bg);color:var(--text);border-color:var(--line);padding:.6rem .8rem;margin-left:.4rem}
 /* coin: every dimension scales with --coin, which coin-flip.js sets to fit the window */
-.coin-stage{--coin:150px;padding:1rem;gap:.75rem}
+.coin-stage{--coin:150px;padding:1rem;gap:.75rem;
+  --cn-1:#fff0a8;--cn-2:#ffcf3f;--cn-3:#d9a400;--cn-rim:#e3ac00;--cn-e1:#e8b92a;--cn-e2:#a87800;--cn-eb:#8f6500;
+  --cn-glyph:#a26f00;--cn-glyph-shadow:0 2px 0 #ffeaa0,0 -1px 0 rgba(90,60,0,.5);--cn-ring:rgba(130,90,0,.45);
+  --cn-inner:rgba(120,80,0,.45);--cn-glow:0 0 0 transparent;--cn-gk:1}
 .coin-wrap{position:relative;width:calc(var(--coin) * 1.6);height:calc(var(--coin) * 2.47)}
 .toss{position:absolute;left:50%;bottom:calc(var(--coin) * .27);width:var(--coin);height:var(--coin);margin-left:calc(var(--coin) / -2);perspective:calc(var(--coin) * 6)}
 .toss.ready{cursor:pointer}
 .toss{border-radius:50%}
 .coin{position:relative;width:100%;height:100%;transform-style:preserve-3d}
-.edge{position:absolute;inset:0;border-radius:50%;background:linear-gradient(#e8b92a,#a87800);border:1px solid #8f6500;transform:translateZ(calc(var(--coin) * var(--k)))}
+.edge{position:absolute;inset:0;border-radius:50%;background:linear-gradient(var(--cn-e1),var(--cn-e2));border:1px solid var(--cn-eb);transform:translateZ(calc(var(--coin) * var(--k)))}
 .face{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:grid;place-items:center;backface-visibility:hidden;
-  background:radial-gradient(circle at 32% 28%,#fff0a8,var(--accent) 45%,#d9a400 85%);border:calc(var(--coin) * .033) solid #e3ac00;box-shadow:inset 0 0 14px rgba(120,80,0,.45)}
+  background:radial-gradient(circle at 32% 28%,var(--cn-1),var(--cn-2) 45%,var(--cn-3) 85%);border:calc(var(--coin) * .033) solid var(--cn-rim);box-shadow:inset 0 0 14px var(--cn-inner),var(--cn-glow)}
 .face.front{transform:translateZ(calc(var(--coin) * .05))}
 .face.back{transform:rotateX(180deg) translateZ(calc(var(--coin) * .05))}
-.rim{width:calc(100% - var(--coin) * .15);height:calc(100% - var(--coin) * .15);border-radius:50%;border:max(2px,calc(var(--coin) * .02)) solid rgba(130,90,0,.45);display:grid;place-items:center}
-.rim span{font-size:calc(var(--coin) * .27);font-weight:800;line-height:1;color:#a26f00;text-shadow:0 2px 0 #ffeaa0,0 -1px 0 rgba(90,60,0,.5)}
+.rim{width:calc(100% - var(--coin) * .15);height:calc(100% - var(--coin) * .15);border-radius:50%;border:max(2px,calc(var(--coin) * .02)) solid var(--cn-ring);display:grid;place-items:center}
+.rim span{font-size:calc(var(--coin) * .27 * var(--cn-gk));font-weight:800;line-height:1;color:var(--cn-glyph);text-shadow:var(--cn-glyph-shadow)}
+/* image coins: the picture is stamped on each face, over the metal */
+.coin.img .face{background-size:cover,auto;background-position:center,0 0;background-repeat:no-repeat,no-repeat}
+.coin.img .face.front{background-image:var(--cn-img-h),radial-gradient(circle at 32% 28%,var(--cn-1),var(--cn-2) 45%,var(--cn-3) 85%)}
+.coin.img .face.back{background-image:var(--cn-img-t),radial-gradient(circle at 32% 28%,var(--cn-1),var(--cn-2) 45%,var(--cn-3) 85%)}
+.coin.img .rim{border-color:transparent}
+.coin.img .rim span{display:none}
 .shine{position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.85) 50%,transparent 65%)}
 .shadow{position:absolute;left:50%;bottom:calc(var(--coin) * .12);width:calc(var(--coin) * .87);height:calc(var(--coin) * .147);border-radius:50%;background:#000;opacity:.4;filter:blur(5px);transform:translateX(-50%)}
 .burst{position:absolute;left:50%;bottom:calc(var(--coin) * .77);width:0;height:0;pointer-events:none}
@@ -107,6 +116,14 @@ select{background:var(--bg);color:var(--text);border-color:var(--line);padding:.
 .bg-thumb{display:block;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--surface)}
 .bg-thumb img{display:block;width:100%;height:100%;object-fit:cover}
 .bg-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* coin picker */
+.sw{display:block;width:44px;height:44px;margin:.15rem auto;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 2px 6px rgba(0,0,0,.4)}
+.face-thumb{display:flex;align-items:center;justify-content:center;gap:.25rem;height:44px;font-size:1.35rem;font-weight:800;line-height:1}
+.face-thumb img{width:38px;height:38px;object-fit:contain;border-radius:50%}
+.cn-custom{display:flex;gap:.6rem;margin-top:.7rem}
+.cn-custom[hidden]{display:none}
+.cn-custom label{display:flex;flex-direction:column;gap:.25rem;flex:1;font-size:.8rem;color:var(--muted)}
+.cn-custom input{font:inherit;font-size:1rem;color:var(--text);background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:.4rem .6rem;width:100%;min-width:0}
 /* dice */
 .dice{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;min-height:90px}
 .die{width:80px;height:80px;padding:12px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);background:#f7f4ff;border-radius:16px;box-shadow:0 4px 0 #b9b2e6}
