@@ -7,6 +7,7 @@ Arcade.register({
     const EDGE = 14, HALF = 0.047;           // coin thickness: 14 stacked discs, ±4.7% of the coin's diameter
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let heads = 0, tails = 0, angle = 0, busy = false, size = 150, ricochets = 0, pendingFit = false;
+    let look = null;                          // coin look (Arcade.coins): metal, size scale... set once the picker is attached
     const history = [];
     let anims = [];                           // animations of the flight in progress
     let flight = null;                        // our own description of that flight (see stateAt)
@@ -107,11 +108,14 @@ Arcade.register({
       const below = footer.offsetHeight + parseFloat(getComputedStyle(main).paddingBottom);
       const need = top + c.offsetHeight + below;
       const target = wrap.offsetHeight + (document.documentElement.clientHeight - need);
-      size = Math.max(70, Math.min(180, Math.floor(target / 2.47)));
+      // the largest coin that fits the window (fitMax), a default of up to 180px, and the visitor's size choice
+      const fitMax = Math.floor(target / 2.47), base = Math.max(70, Math.min(180, fitMax));
+      size = Math.max(36, Math.min(Math.floor(base * (look ? look.sizeScale : 1)), Math.max(fitMax, base)));
       c.style.setProperty('--coin', size + 'px');
     }
     const onResize = () => fit();
     addEventListener('resize', onResize);
+    c.addEventListener('coinresize', onResize);            // fired by the Customize panel when the size changes
     fit();
     if (document.fonts) document.fonts.ready.then(fit);
     // Refit whenever anything around the coin changes size (web font loading in, text wrapping, etc.).
@@ -123,7 +127,7 @@ Arcade.register({
 
     // Sparks escalate with the ricochet combo (level): more of them, farther, brighter, more colours,
     // then streaks, falling arcs and expanding shockwave rings.
-    let look = null;                          // coin look (Arcade.coins): its metal sets the first two spark colours
+    // the coin's metal (look.sparks) sets the first two spark colours
     const BASE_SPARKS = ['#ffcf3f', '#ffe58a'];
     const PALETTE_TAIL = ['#ff9f1c', '#ff4d6d', '#ffffff', '#5ad1ff', '#b388ff'];   // added as the combo grows
 
@@ -355,10 +359,10 @@ Arcade.register({
     rico.onchange = updateClickable;
     setBusy(false);
 
-    // Customize panel (top-right of the stage): backgrounds now, coin looks later
+    // Customize panel (top-right of the stage): backgrounds, then the coin's material, faces and shape
     const cz = Arcade.customize && Arcade.customize(c);
     if (cz) Arcade.backgrounds.attach(c, cz);
-    if (cz && Arcade.coins) look = Arcade.coins.attach(c, cz);
+    if (cz && Arcade.coins) { look = Arcade.coins.attach(c, cz); fit(); }   // apply the saved size straight away
 
     return () => { if (cz) cz.destroy(); flightTimers.forEach(clearTimeout); removeEventListener('resize', onResize); ro.disconnect(); cancelAnimationFrame(raf); cancelAnimationFrame(altRaf); };
   },

@@ -2,7 +2,8 @@
    Arcade.coins.attach(stage, customize) adds two sections to the Customize panel and
    returns { sparks } so the spark effects can match the coin's metal. */
 Arcade.coins = (() => {
-  const KEY = { material: 'arcade.coin.material', faces: 'arcade.coin.faces', custom: 'arcade.coin.custom' };
+  const KEY = { material: 'arcade.coin.material', faces: 'arcade.coin.faces', custom: 'arcade.coin.custom',
+    size: 'arcade.coin.size', thick: 'arcade.coin.thickness', edge: 'arcade.coin.edge' };
   const read = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const write = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked: choice won't persist */ } };
   const pretty = (f) => f.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -155,7 +156,74 @@ Arcade.coins = (() => {
       setFaces(items.find((it) => it.id === saved) || items[0], false);
     });
 
-    return { get sparks() { return look.sparks; } };
+    // ---- shape: size, thickness, edge style ----
+    const DEFAULT = { size: 1, thick: 1, edge: 'smooth' };
+    const EDGES = [{ id: 'smooth', label: 'Smooth' }, { id: 'reeded', label: 'Reeded' }, { id: 'coarse', label: 'Coarse' }, { id: 'banded', label: 'Banded' }];
+    const num = (k, d, lo, hi) => { const v = parseFloat(read(k)); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+    const shape = {
+      size: num(KEY.size, DEFAULT.size, 0.4, 1.5),
+      thick: num(KEY.thick, DEFAULT.thick, 0.4, 3),
+      edge: (EDGES.find((e) => e.id === read(KEY.edge)) || EDGES[0]).id,
+    };
+
+    // The coin's side is a stack of discs; thicker coins get more discs so there are no visible gaps.
+    const HALF = 0.047;
+    function buildEdges() {
+      const n = Math.max(8, Math.min(36, Math.round(14 * shape.thick)));
+      coinEl.querySelectorAll('.edge').forEach((e) => e.remove());
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < n; i++) {
+        const k = -HALF + (2 * HALF * i) / (n - 1), e = document.createElement('i');
+        e.className = 'edge' + (Math.abs(k) < HALF / 3 ? ' mid' : '');   // middle discs: the "band" in Banded
+        e.style.setProperty('--k', k.toFixed(4));
+        frag.append(e);
+      }
+      coinEl.prepend(frag);
+    }
+    let edgeRaf = 0;
+    const rebuildSoon = () => { cancelAnimationFrame(edgeRaf); edgeRaf = requestAnimationFrame(buildEdges); };
+    const resized = () => stage.dispatchEvent(new Event('coinresize'));    // the game re-fits the coin
+
+    const slider = (label, min, max, step, fmt, key, onInput) => {
+      const l = document.createElement('label'), out = document.createElement('output'), inp = document.createElement('input');
+      l.className = 'cn-slider'; inp.type = 'range'; inp.min = min; inp.max = max; inp.step = step;
+      const show = () => { out.textContent = fmt(+inp.value); };
+      inp.oninput = () => { show(); write(key, inp.value); onInput(+inp.value); };
+      l.append(span('', label), out, inp);
+      return { el: l, set(v) { inp.value = v; show(); } };
+    };
+    const sizeCtl = slider('Size', 0.4, 1.5, 0.05, (v) => Math.round(v * 100) + '%', KEY.size, (v) => { shape.size = v; resized(); });
+    const thickCtl = slider('Thickness', 0.4, 3, 0.1, (v) => v.toFixed(1) + '×', KEY.thick, (v) => {
+      shape.thick = v; stage.style.setProperty('--cn-th', v); rebuildSoon();
+    });
+    const edgeCtl = radios('Edge style', EDGES, (b, e) => { const t = span('edge-thumb'); t.dataset.edge = e.id; b.append(t, span('bg-name', e.label)); });
+    function setEdge(e, save) {
+      EDGES.forEach((x) => coinEl.classList.remove('edge-' + x.id));
+      if (e.id !== 'smooth') coinEl.classList.add('edge-' + e.id);
+      shape.edge = e.id; edgeCtl.mark(e);
+      if (save) write(KEY.edge, e.id);
+    }
+    edgeCtl.onPick(setEdge);
+
+    const reset = document.createElement('button');
+    reset.type = 'button'; reset.className = 'cn-reset'; reset.textContent = 'Reset shape';
+    reset.onclick = () => {
+      Object.assign(shape, DEFAULT);
+      sizeCtl.set(shape.size); thickCtl.set(shape.thick);
+      [KEY.size, KEY.thick].forEach((k) => write(k, ''));
+      stage.style.setProperty('--cn-th', shape.thick); buildEdges(); setEdge(EDGES[0], true); resized();
+    };
+
+    const box = document.createElement('div');
+    box.append(sizeCtl.el, thickCtl.el, edgeCtl.el, reset);
+    cz.add('Coin shape', box);
+    sizeCtl.set(shape.size); thickCtl.set(shape.thick);
+    stage.style.setProperty('--cn-th', shape.thick);
+    buildEdges();
+    setEdge(EDGES.find((e) => e.id === shape.edge), false);
+    resized();
+
+    return { get sparks() { return look.sparks; }, get sizeScale() { return shape.size; } };
   }
 
   return { attach };
