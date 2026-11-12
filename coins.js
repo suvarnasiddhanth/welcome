@@ -48,7 +48,30 @@ Arcade.coins = (() => {
     s.onerror = () => done([]);
     document.head.append(s);
   }));
-  const loadImg = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = ok; i.onerror = no; i.src = src; });
+  const loadImg = (src) => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+
+  // Is this a photo of a whole coin (opaque all the way out to its own rim)? If so, report the rim's average colour.
+  // Artwork on a transparent background (like the sample sun/moon) is not a photo: the metal shows through it.
+  function analyse(img) {
+    try {
+      const N = 96, cv = document.createElement('canvas');
+      cv.width = cv.height = N;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, N, N);
+      const d = ctx.getImageData(0, 0, N, N).data;
+      let ring = 0, opaque = 0, rim = 0, R = 0, G = 0, B = 0;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const r = Math.hypot(((x + 0.5) / N) * 2 - 1, ((y + 0.5) / N) * 2 - 1), i = (y * N + x) * 4, a = d[i + 3];
+        if (r >= 0.86 && r <= 0.94) { ring++; if (a >= 240) opaque++; }
+        if (r >= 0.9 && r <= 0.97 && a >= 200) { rim++; R += d[i]; G += d[i + 1]; B += d[i + 2]; }
+      }
+      return { photo: opaque / ring > 0.9 && rim > 0, rgb: rim ? [R / rim, G / rim, B / rim] : null };
+    } catch (e) {
+      return { photo: false, rgb: null };            // e.g. opened from file://, where browsers block reading pixels
+    }
+  }
+  // near-square pictures are stretched to fill the circle; anything else is cropped to fit
+  const fitOf = (img) => (img.naturalWidth && img.naturalHeight && Math.abs(img.naturalWidth / img.naturalHeight - 1) < 0.1 ? '100% 100%' : 'cover');
 
   // a radiogroup of buttons with arrow-key navigation
   function radios(label, items, render) {
@@ -82,18 +105,38 @@ Arcade.coins = (() => {
   function attach(stage, cz) {
     const coinEl = stage.querySelector('.coin');
     const glyphH = stage.querySelector('.face.front .rim span'), glyphT = stage.querySelector('.face.back .rim span');
-    const look = { sparks: MATERIALS[0].sparks };
+    let curMat = MATERIALS[0], photo = null;           // photo: colours taken from an image coin's own rim
+    const note = document.createElement('p');
+    note.className = 'cn-note'; note.hidden = true;
+    note.textContent = "This coin's picture sets its own colours, so the material is ignored.";
 
     // material
     const mats = radios('Coin material', MATERIALS, (b, m) => {
       const sw = span('sw'); sw.style.background = m.swatch;
       b.append(sw, span('bg-name', m.label));
     });
-    cz.add('Coin material', mats.el);
+    const matBox = document.createElement('div');
+    matBox.append(mats.el, note);
+    cz.add('Coin material', matBox);
+    function paint() {                                  // material colours first, then an image coin's own colours over them
+      Object.entries(curMat.vars).forEach(([k, v]) => stage.style.setProperty(k, v));
+      if (photo) Object.entries(photo.vars).forEach(([k, v]) => stage.style.setProperty(k, v));
+      note.hidden = !photo;
+    }
     function setMaterial(m, save) {
-      Object.entries(m.vars).forEach(([k, v]) => stage.style.setProperty(k, v));
-      look.sparks = m.sparks; mats.mark(m);
+      curMat = m; paint(); mats.mark(m);
       if (save) write(KEY.material, m.id);
+    }
+    function setPhoto(rgb) {
+      if (!rgb) photo = null;
+      else {
+        const k = (f) => 'rgb(' + rgb.map((v) => Math.min(255, Math.round(v * f))).join(',') + ')';
+        photo = {
+          vars: { '--cn-1': k(1.6), '--cn-3': k(0.8), '--cn-e1': k(1.25), '--cn-e2': k(0.55), '--cn-eb': k(0.35), '--cn-glow': NO_GLOW },
+          sparks: [k(2.6), k(3.4)],
+        };
+      }
+      paint();
     }
     mats.onPick(setMaterial);
     setMaterial(MATERIALS.find((m) => m.id === read(KEY.material)) || MATERIALS[0], false);
@@ -119,7 +162,7 @@ Arcade.coins = (() => {
 
     let faces = null, items = [], current = null;
     function glyph(el, text) { el.textContent = text; el.style.setProperty('--cn-gk', scale(chars(text).length)); }
-    function showText(h, t) { coinEl.classList.remove('img'); glyph(glyphH, h || 'H'); glyph(glyphT, t || 'T'); }
+    function showText(h, t) { coinEl.classList.remove('img', 'photo'); setPhoto(null); glyph(glyphH, h || 'H'); glyph(glyphT, t || 'T'); }
 
     function setFaces(item, save) {
       current = item; faces.mark(item); row.hidden = item.kind !== 'custom';
@@ -127,11 +170,16 @@ Arcade.coins = (() => {
       if (item.kind === 'sym') showText(item.h, item.t);
       else if (item.kind === 'custom') showText(custom[0], custom[1]);
       else {                                           // image coin: preload both faces, then swap
-        Promise.all([loadImg(item.heads), loadImg(item.tails)]).then(() => {
+        Promise.all([loadImg(item.heads), loadImg(item.tails)]).then(([ih, it]) => {
           if (current !== item) return;
+          const a = analyse(ih), b = analyse(it), whole = a.photo && b.photo && a.rgb && b.rgb;
           stage.style.setProperty('--cn-img-h', `url("${item.heads}")`);
           stage.style.setProperty('--cn-img-t', `url("${item.tails}")`);
+          stage.style.setProperty('--cn-fit-h', fitOf(ih));
+          stage.style.setProperty('--cn-fit-t', fitOf(it));
           coinEl.classList.add('img');
+          coinEl.classList.toggle('photo', !!whole);     // whole-coin photo: no metal frame, edge colour from the picture
+          setPhoto(whole ? a.rgb.map((v, i) => (v + b.rgb[i]) / 2) : null);
         }).catch(() => { if (current === item) setFaces(items[0], false); });
       }
     }
@@ -223,7 +271,7 @@ Arcade.coins = (() => {
     setEdge(EDGES.find((e) => e.id === shape.edge), false);
     resized();
 
-    return { get sparks() { return look.sparks; }, get sizeScale() { return shape.size; } };
+    return { get sparks() { return photo ? photo.sparks : curMat.sparks; }, get sizeScale() { return shape.size; } };
   }
 
   return { attach };
